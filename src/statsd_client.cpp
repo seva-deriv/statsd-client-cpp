@@ -1,15 +1,42 @@
-
 #include <math.h>
-#include <netdb.h>
 #include <time.h>
-#include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <sys/types.h>
-#include <netinet/in.h>
 #include "statsd_client.h"
-#include <fcntl.h>
+
+/* platform-specific headers */
+#ifdef HAVE_WINSOCK2_H
+    #include <winsock2.h>
+#endif
+#ifdef HAVE_WS2TCPIP_H
+    #include <ws2tcpip.h>
+#endif
+
+#ifdef HAVE_SYS_SOCKET_H
+    #include <sys/socket.h>
+#endif
+
+#ifdef HAVE_APRA_INET_H
+  #include <arpa/inet.h>
+#endif
+
+#ifdef HAVE_NETDB_H
+  #include <netdb.h>  /* Needed for getaddrinfo() and freeaddrinfo() */
+#endif
+
+#ifdef HAVE_UNISTD_H
+    #include <unistd.h> /* Needed for close() */
+#endif
+
+#ifdef _WIN32
+    // Win32-specific close socket function
+    #define CLOSE_SOCKET(s) closesocket(s)
+#else
+    // Generic Unix close socket function
+    #define CLOSE_SOCKET(s) close(s)
+#endif
 
 using namespace std;
 namespace statsd {
@@ -27,7 +54,7 @@ inline bool should_send(float sample_rate)
         return true;
     }
 
-    float p = ((float)random() / RAND_MAX);
+    float p = ((float)rand() / RAND_MAX);
     return sample_rate > p;
 }
 
@@ -48,14 +75,14 @@ StatsdClient::StatsdClient(const string& host, int port, const string& ns)
     d = new _StatsdClientData;
     d->sock = -1;
     config(host, port, ns);
-    srandom(time(NULL));
+    srand(time(NULL));
 }
 
 StatsdClient::~StatsdClient()
 {
     // close socket
     if (d->sock >= 0) {
-        close(d->sock);
+        CLOSE_SOCKET(d->sock);
         d->sock = -1;
         delete d;
         d = NULL;
@@ -69,7 +96,7 @@ void StatsdClient::config(const string& host, int port, const string& ns)
     d->port = port;
     d->init = false;
     if ( d->sock >= 0 ) {
-        close(d->sock);
+        CLOSE_SOCKET(d->sock);
     }
     d->sock = -1;
 }
@@ -88,25 +115,21 @@ int StatsdClient::init()
     d->server.sin_family = AF_INET;
     d->server.sin_port = htons(d->port);
 
-    int ret = inet_aton(d->host.c_str(), &d->server.sin_addr);
-    if ( ret == 0 )
-    {
-        // host must be a domain, get it from internet
-        struct addrinfo hints, *result = NULL;
-        memset(&hints, 0, sizeof(hints));
-        hints.ai_family = AF_INET;
-        hints.ai_socktype = SOCK_DGRAM;
+    // host must be a domain, get it from internet
+    struct addrinfo hints, *result = NULL;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_DGRAM;
 
-        ret = getaddrinfo(d->host.c_str(), NULL, &hints, &result);
-        if ( ret ) {
-            snprintf(d->errmsg, sizeof(d->errmsg),
-                    "getaddrinfo fail, error=%d, msg=%s", ret, gai_strerror(ret) );
-            return -2;
-        }
-        struct sockaddr_in* host_addr = (struct sockaddr_in*)result->ai_addr;
-        memcpy(&d->server.sin_addr, &host_addr->sin_addr, sizeof(struct in_addr));
-        freeaddrinfo(result);
+    int ret = getaddrinfo(d->host.c_str(), NULL, &hints, &result);
+    if ( ret ) {
+        snprintf(d->errmsg, sizeof(d->errmsg),
+                "getaddrinfo fail, error=%d, msg=%s", ret, gai_strerror(ret) );
+        return -2;
     }
+    struct sockaddr_in* host_addr = (struct sockaddr_in*)result->ai_addr;
+    memcpy(&d->server.sin_addr, &host_addr->sin_addr, sizeof(struct in_addr));
+    freeaddrinfo(result);
 
     d->init = true;
     return 0;
