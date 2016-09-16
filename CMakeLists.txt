@@ -20,10 +20,6 @@ if(NOT UNIX)
   CHECK_INCLUDE_FILE("ws2tcpip.h"     HAVE_WS2TCPIP_H)
 endif(NOT UNIX)
 
-# check for functions
-include (${CMAKE_ROOT}/Modules/CheckFunctionExists.cmake)
-check_function_exists (closesocket HAVE_CLOSE_SOCKET)
-
 
 include_directories ("${PROJECT_SOURCE_DIR}/src")
 add_subdirectory (src)
