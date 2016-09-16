@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <sys/types.h>
+#include <random>
 #include "statsd_client.h"
 
 
@@ -30,17 +31,6 @@ inline bool fequal(float a, float b)
     return ( fabs(a - b) < epsilon );
 }
 
-inline bool should_send(float sample_rate)
-{
-    if ( fequal(sample_rate, 1.0) )
-    {
-        return true;
-    }
-
-    float p = ((float)rand() / RAND_MAX);
-    return sample_rate > p;
-}
-
 struct _StatsdClientData {
     int     sock;
     struct  sockaddr_in server;
@@ -50,13 +40,33 @@ struct _StatsdClientData {
     short   port;
     bool    init;
 
+    std::default_random_engine  rng_engine;
+    std::uniform_real_distribution<> rng_dist;
+
+
     char    errmsg[1024];
 };
+
+inline bool should_send(_StatsdClientData* d, float sample_rate)
+{
+    if ( fequal(sample_rate, 1.0) )
+    {
+        return true;
+    }
+
+    float p = d->rng_dist(d->rng_engine);
+    return sample_rate > p;
+}
 
 StatsdClient::StatsdClient(const string& host, int port, const string& ns)
 {
     d = new _StatsdClientData;
+
     d->sock = -1;
+    std::random_device rd;
+    d->rng_engine = std::default_random_engine(rd () );
+    d->rng_dist = std::uniform_real_distribution<>(0.0f, 1.0f);
+
     config(host, port, ns);
     srand(time(NULL));
 }
@@ -156,7 +166,7 @@ int StatsdClient::timing(const string& key, size_t ms, float sample_rate)
 
 int StatsdClient::send(string key, size_t value, const string &type, float sample_rate)
 {
-    if (!should_send(sample_rate)) {
+    if (!should_send(this->d, sample_rate)) {
         return 0;
     }
 
