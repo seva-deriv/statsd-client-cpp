@@ -1,4 +1,4 @@
-add_library(StatsdClient2 statsd_client.cpp)
+add_library(StatsdClient statsd_client.cpp)
 
-install (TARGETS StatsdClient2 DESTINATION bin)
-install (FILES MathFunctions.h DESTINATION include)
+install (TARGETS StatsdClient DESTINATION lib)
+install (FILES statsd_client.h DESTINATION include)
