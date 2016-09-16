@@ -25,8 +25,8 @@ include_directories ("${PROJECT_SOURCE_DIR}/src")
 add_subdirectory (src)
 
 configure_file (
-  "${PROJECT_SOURCE_DIR}/src/StatsdClient2Config.h.in"
-  "${PROJECT_BINARY_DIR}/StatsdClient2Config.h"
+  "${PROJECT_SOURCE_DIR}/src/StatsdClientConfig.h.in"
+  "${PROJECT_BINARY_DIR}/StatsdClientConfig.h"
   )
 
 include_directories("${PROJECT_BINARY_DIR}")
