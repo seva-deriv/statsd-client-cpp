@@ -114,6 +114,7 @@ int StatsdClient::init()
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_DGRAM;
 
+    // looks up IPv4/IPv6 address by host name or stringized IP address
     int ret = getaddrinfo(d->host.c_str(), NULL, &hints, &result);
     if ( ret ) {
         snprintf(d->errmsg, sizeof(d->errmsg),
