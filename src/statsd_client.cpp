@@ -68,7 +68,6 @@ StatsdClient::StatsdClient(const string& host, int port, const string& ns)
     d->rng_dist = std::uniform_real_distribution<>(0.0f, 1.0f);
 
     config(host, port, ns);
-    srand(time(NULL));
 }
 
 StatsdClient::~StatsdClient()
