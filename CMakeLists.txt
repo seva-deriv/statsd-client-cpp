@@ -12,6 +12,8 @@ configure_file (
   "${PROJECT_BINARY_DIR}/StatsdClientConfig.h"
   )
 
+target_compile_features(StatsdClient PRIVATE cxx_nullptr)
+
 include_directories("${PROJECT_BINARY_DIR}")
 
 install (FILES "${PROJECT_BINARY_DIR}/StatsdClientConfig.h"
