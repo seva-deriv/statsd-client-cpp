@@ -1,10 +1,2 @@
 #define StatsdClient_VERSION_MAJOR @StatsdClient_VERSION_MAJOR@
 #define StatsdClient_VERSION_MINOR @StatsdClient_VERSION_MINOR@
-
-#cmakedefine HAVE_SYS_SOCKET_H
-#cmakedefine HAVE_APRA_INET_H
-#cmakedefine HAVE_NETDB_H
-#cmakedefine HAVE_UNISTD_H
-
-#cmakedefine HAVE_WINSOCK2_H
-#cmakedefine HAVE_WS2TCPIP_H

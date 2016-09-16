@@ -6,35 +6,18 @@
 #include <sys/types.h>
 #include "statsd_client.h"
 
+
 /* platform-specific headers */
-#ifdef HAVE_WINSOCK2_H
-    #include <winsock2.h>
-#endif
-#ifdef HAVE_WS2TCPIP_H
-    #include <ws2tcpip.h>
-#endif
-
-#ifdef HAVE_SYS_SOCKET_H
-    #include <sys/socket.h>
-#endif
-
-#ifdef HAVE_APRA_INET_H
-  #include <arpa/inet.h>
-#endif
-
-#ifdef HAVE_NETDB_H
-  #include <netdb.h>  /* Needed for getaddrinfo() and freeaddrinfo() */
-#endif
-
-#ifdef HAVE_UNISTD_H
-    #include <unistd.h> /* Needed for close() */
-#endif
-
 #ifdef _WIN32
-    // Win32-specific close socket function
+    #include <winsock2.h>
+    #include <ws2tcpip.h>
     #define CLOSE_SOCKET(s) closesocket(s)
 #else
-    // Generic Unix close socket function
+    #include <sys/socket.h>
+    #include <arpa/inet.h>
+    #include <netdb.h>  /* Needed for getaddrinfo() and freeaddrinfo() */
+    #include <unistd.h> /* Needed for close() */
+
     #define CLOSE_SOCKET(s) close(s)
 #endif
 

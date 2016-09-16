@@ -2,7 +2,7 @@
 #ifndef STATSD_CLIENT_H
 #define STATSD_CLIENT_H
 
-#include "../StatsdClient2Config.h"
+#include "../StatsdClientConfig.h"
 
 #include <string>
 
