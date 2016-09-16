@@ -68,7 +68,7 @@ StatsdClient::~StatsdClient()
         CLOSE_SOCKET(d->sock);
         d->sock = -1;
         delete d;
-        d = NULL;
+        d = std::nullptr;
     }
 }
 
