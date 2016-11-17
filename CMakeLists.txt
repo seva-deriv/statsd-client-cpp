@@ -4,17 +4,17 @@ project (StatsdClient)
 set (StatsdClient_VERSION_MAJOR 1)
 set (StatsdClient_VERSION_MINOR 0)
 
-include_directories ("${PROJECT_SOURCE_DIR}/src")
-add_subdirectory (src)
+include_directories ("src")
+add_subdirectory ("src")
 
 configure_file (
-  "${PROJECT_SOURCE_DIR}/src/StatsdClientConfig.h.in"
-  "${PROJECT_BINARY_DIR}/StatsdClientConfig.h"
+  "src/StatsdClientConfig.h.in"
+  "StatsdClientConfig.h"
   )
 
-target_compile_features(StatsdClient PRIVATE cxx_nullptr)
+set_property (SOURCE "StatsdClientConfig.h" PROPERTY GENERATED TRUE)
 
-include_directories("${PROJECT_BINARY_DIR}")
+target_compile_features(StatsdClient PRIVATE cxx_nullptr)
 
 install (FILES "${PROJECT_BINARY_DIR}/StatsdClientConfig.h"
          DESTINATION include)
