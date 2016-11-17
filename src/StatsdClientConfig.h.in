@@ -1,0 +1,2 @@
+#define StatsdClient_VERSION_MAJOR @StatsdClient_VERSION_MAJOR@
+#define StatsdClient_VERSION_MINOR @StatsdClient_VERSION_MINOR@

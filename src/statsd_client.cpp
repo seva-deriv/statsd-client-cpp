@@ -1,15 +1,26 @@
-
 #include <math.h>
-#include <netdb.h>
 #include <time.h>
-#include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <sys/types.h>
-#include <netinet/in.h>
+#include <random>
 #include "statsd_client.h"
-#include <fcntl.h>
+
+
+/* platform-specific headers */
+#ifdef _WIN32
+    #include <winsock2.h>
+    #include <ws2tcpip.h>
+    #define CLOSE_SOCKET(s) closesocket(s)
+#else
+    #include <sys/socket.h>
+    #include <arpa/inet.h>
+    #include <netdb.h>  /* Needed for getaddrinfo() and freeaddrinfo() */
+    #include <unistd.h> /* Needed for close() */
+
+    #define CLOSE_SOCKET(s) close(s)
+#endif
 
 using namespace std;
 namespace statsd {
@@ -18,17 +29,6 @@ inline bool fequal(float a, float b)
 {
     const float epsilon = 0.0001;
     return ( fabs(a - b) < epsilon );
-}
-
-inline bool should_send(float sample_rate)
-{
-    if ( fequal(sample_rate, 1.0) )
-    {
-        return true;
-    }
-
-    float p = ((float)random() / RAND_MAX);
-    return sample_rate > p;
 }
 
 struct _StatsdClientData {
@@ -40,25 +40,44 @@ struct _StatsdClientData {
     short   port;
     bool    init;
 
+    std::default_random_engine  rng_engine;
+    std::uniform_real_distribution<> rng_dist;
+
+
     char    errmsg[1024];
 };
+
+inline bool should_send(_StatsdClientData* d, float sample_rate)
+{
+    if ( fequal(sample_rate, 1.0) )
+    {
+        return true;
+    }
+
+    float p = d->rng_dist(d->rng_engine);
+    return sample_rate > p;
+}
 
 StatsdClient::StatsdClient(const string& host, int port, const string& ns)
 {
     d = new _StatsdClientData;
+
     d->sock = -1;
+    std::random_device rd;
+    d->rng_engine = std::default_random_engine(rd () );
+    d->rng_dist = std::uniform_real_distribution<>(0.0f, 1.0f);
+
     config(host, port, ns);
-    srandom(time(NULL));
 }
 
 StatsdClient::~StatsdClient()
 {
     // close socket
     if (d->sock >= 0) {
-        close(d->sock);
+        CLOSE_SOCKET(d->sock);
         d->sock = -1;
         delete d;
-        d = NULL;
+        d = nullptr;
     }
 }
 
@@ -69,7 +88,7 @@ void StatsdClient::config(const string& host, int port, const string& ns)
     d->port = port;
     d->init = false;
     if ( d->sock >= 0 ) {
-        close(d->sock);
+        CLOSE_SOCKET(d->sock);
     }
     d->sock = -1;
 }
@@ -88,25 +107,22 @@ int StatsdClient::init()
     d->server.sin_family = AF_INET;
     d->server.sin_port = htons(d->port);
 
-    int ret = inet_aton(d->host.c_str(), &d->server.sin_addr);
-    if ( ret == 0 )
-    {
-        // host must be a domain, get it from internet
-        struct addrinfo hints, *result = NULL;
-        memset(&hints, 0, sizeof(hints));
-        hints.ai_family = AF_INET;
-        hints.ai_socktype = SOCK_DGRAM;
+    // host must be a domain, get it from internet
+    struct addrinfo hints, *result = NULL;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_DGRAM;
 
-        ret = getaddrinfo(d->host.c_str(), NULL, &hints, &result);
-        if ( ret ) {
-            snprintf(d->errmsg, sizeof(d->errmsg),
-                    "getaddrinfo fail, error=%d, msg=%s", ret, gai_strerror(ret) );
-            return -2;
-        }
-        struct sockaddr_in* host_addr = (struct sockaddr_in*)result->ai_addr;
-        memcpy(&d->server.sin_addr, &host_addr->sin_addr, sizeof(struct in_addr));
-        freeaddrinfo(result);
+    // looks up IPv4/IPv6 address by host name or stringized IP address
+    int ret = getaddrinfo(d->host.c_str(), NULL, &hints, &result);
+    if ( ret ) {
+        snprintf(d->errmsg, sizeof(d->errmsg),
+                "getaddrinfo fail, error=%d, msg=%s", ret, gai_strerror(ret) );
+        return -2;
     }
+    struct sockaddr_in* host_addr = (struct sockaddr_in*)result->ai_addr;
+    memcpy(&d->server.sin_addr, &host_addr->sin_addr, sizeof(struct in_addr));
+    freeaddrinfo(result);
 
     d->init = true;
     return 0;
@@ -150,7 +166,7 @@ int StatsdClient::timing(const string& key, size_t ms, float sample_rate)
 
 int StatsdClient::send(string key, size_t value, const string &type, float sample_rate)
 {
-    if (!should_send(sample_rate)) {
+    if (!should_send(this->d, sample_rate)) {
         return 0;
     }
 
