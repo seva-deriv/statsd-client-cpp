@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 3.2)
 project (StatsdClient)
 
 set (StatsdClient_VERSION_MAJOR 1)
-set (StatsdClient_VERSION_MINOR 0)
+set (StatsdClient_VERSION_MINOR 1)
 
 include_directories ("src")
 add_subdirectory ("src")
