@@ -139,32 +139,32 @@ void StatsdClient::cleanup(string& key)
     }
 }
 
-int StatsdClient::dec(const string& key, float sample_rate)
+int StatsdClient::dec(const string& key, float sample_rate, tags_t tags)
 {
-    return count(key, -1, sample_rate);
+    return count(key, -1, sample_rate, tags);
 }
 
-int StatsdClient::inc(const string& key, float sample_rate)
+int StatsdClient::inc(const string& key, float sample_rate, tags_t tags)
 {
-    return count(key, 1, sample_rate);
+    return count(key, 1, sample_rate, tags);
 }
 
-int StatsdClient::count(const string& key, size_t value, float sample_rate)
+int StatsdClient::count(const string& key, size_t value, float sample_rate, tags_t tags)
 {
-    return send(key, value, "c", sample_rate);
+    return send(key, value, "c", sample_rate, tags);
 }
 
-int StatsdClient::gauge(const string& key, size_t value, float sample_rate)
+int StatsdClient::gauge(const string& key, size_t value, float sample_rate, tags_t tags)
 {
-    return send(key, value, "g", sample_rate);
+    return send(key, value, "g", sample_rate, tags);
 }
 
-int StatsdClient::timing(const string& key, size_t ms, float sample_rate)
+int StatsdClient::timing(const string& key, size_t ms, float sample_rate, tags_t tags)
 {
-    return send(key, ms, "ms", sample_rate);
+    return send(key, ms, "ms", sample_rate, tags);
 }
 
-int StatsdClient::send(string key, size_t value, const string &type, float sample_rate)
+int StatsdClient::send(string key, size_t value, const string &type, float sample_rate, tags_t tags)
 {
     if (!should_send(this->d, sample_rate)) {
         return 0;
@@ -172,16 +172,28 @@ int StatsdClient::send(string key, size_t value, const string &type, float sampl
 
     cleanup(key);
 
+    std::string tags_str;
+    if (!tags.empty()) {
+        tags_str.reserve(256);
+        tags_str += "|#";
+        for(std::size_t i = 0, size = tags.size(); i < size; ++i) {
+            tags_str += tags[i];
+            if (i < size -1 ) {
+                tags_str += ",";
+            }
+        }
+    }
+
     char buf[256];
     if ( fequal( sample_rate, 1.0 ) )
     {
-        snprintf(buf, sizeof(buf), "%s%s:%zd|%s",
-                d->ns.c_str(), key.c_str(), value, type.c_str());
+        snprintf(buf, sizeof(buf), "%s%s:%zd|%s%s",
+                d->ns.c_str(), key.c_str(), value, type.c_str(), tags_str.c_str());
     }
     else
     {
-        snprintf(buf, sizeof(buf), "%s%s:%zd|%s|@%.2f",
-                d->ns.c_str(), key.c_str(), value, type.c_str(), sample_rate);
+        snprintf(buf, sizeof(buf), "%s%s:%zd|%s|@%.2f%s",
+                d->ns.c_str(), key.c_str(), value, type.c_str(), sample_rate, tags_str.c_str());
     }
 
     return send(buf);
