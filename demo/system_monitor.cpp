@@ -150,7 +150,7 @@ int main(int argc, char *argv[])
         total = user + sys + idle;
         busy = user + sys;
 
-        client.send("system.cpu", 100 * (busy - old_busy)/(total - old_total), "g", 1.0);
+        client.send("system.cpu", 100 * (busy - old_busy)/(total - old_total), "g", 1.0, {});
 
         old_total = total;
         old_busy = busy;

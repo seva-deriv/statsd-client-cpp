@@ -4,8 +4,8 @@ project (StatsdClient)
 set (StatsdClient_VERSION_MAJOR 1)
 set (StatsdClient_VERSION_MINOR 1)
 
-include_directories ("src")
 add_subdirectory ("src")
+add_subdirectory ("demo")
 
 configure_file (
   "src/StatsdClientConfig.h.in"
